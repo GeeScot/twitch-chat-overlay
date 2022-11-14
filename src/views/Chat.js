@@ -18,7 +18,7 @@ const Chat = () => {
   const channelName = window.location.pathname.substring(1).toLowerCase();
 
   // Configuration Options
-  const [options, setOptions] = useState(null);
+  const options = useRef({});
 
   // Twitch Client
   const client = new tmi.Client({ channels: [channelName] });
@@ -30,10 +30,10 @@ const Chat = () => {
 
   useEffect(() => {
     const query = queryString.parse(window.location.search);
-    const options = JSON.parse(Buffer.from(query.options, 'base64').toString());
+    const optionsObj = JSON.parse(Buffer.from(query.options, 'base64').toString());
 
-    setOptions(options);
-  }, [setOptions])
+    options.current = optionsObj;
+  }, [])
 
   const onMessageReceived = (channel, userstate, message, self) => {
     if (self) {
@@ -80,7 +80,7 @@ const Chat = () => {
       cssClass: 'animate__slideInUp'
     };
     
-    const max = (options?.messages ?? 30) - 1;
+    const max = (options?.current?.messages ?? 30) - 1;
     setMessages(messages => [...messages.slice(-max).map(m => {
       return {
         ...m,
@@ -88,8 +88,8 @@ const Chat = () => {
       }
     }), newMessage]);
 
-    if (options && options.timeout !== 0) {
-      setTimeout(() => onMessageExpired(userstate.id), (options?.timeout ?? 30) * 1000);
+    if (options?.current && options.current.timeout !== 0) {
+      setTimeout(() => onMessageExpired(userstate.id), (options.current.timeout ?? 30) * 1000);
     }
   }
 
@@ -182,7 +182,7 @@ const Chat = () => {
 
     setDisplayMessages(processed);
 
-    if (options?.autoScroll === true) {
+    if (options?.current?.autoScroll === true) {
       // https://stackoverflow.com/questions/37620694/how-to-scroll-to-bottom-in-react
       setTimeout(() => bottom.current.scrollIntoView({ behaviour: 'smooth' }), 100);
     }
@@ -193,9 +193,9 @@ const Chat = () => {
     <ChatContainer>
       {displayMessages && displayMessages.map((message, index) => {
         return (
-          <MessageContainer key={index} className={`${options?.disableAnimations ? '' : 'animate__animated animate__faster'} ${message.cssClass}`}>
+          <MessageContainer key={index} className={`${options?.current?.disableAnimations ? '' : 'animate__animated animate__faster'} ${message.cssClass}`}>
             <Username color={message.color}>
-              {options?.showTimestamps && <Timestamp>{ format(message.timestamp, 'HH:mm')  }</Timestamp>}
+              {options?.current?.showTimestamps && <Timestamp>{ format(message.timestamp, 'HH:mm')  }</Timestamp>}
               {channelBadges && message.badges && Object.entries(message.badges).map(([badge, version]) => {
                 const badgeVersion = (channelBadges.badge_sets[badge] || globalBadges.badge_sets[badge])?.versions[version];
                 if (!badgeVersion) {
