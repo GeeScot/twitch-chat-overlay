@@ -58,7 +58,7 @@ export const twitchChatSocket = createApi({
           client.on('messagedeleted', onMessageDeleted);
           client.on('clearchat', onClearChat);
         } catch {}
-        await cacheEntryRemoved
+        await cacheEntryRemoved;
         client.close();
         clearInterval(interval);
       },

@@ -33,7 +33,7 @@ const mapSubscriberEmotes = (message) => {
     const m = messageStack.pop();
     const tailIndex = Math.min(m.length, parseInt(end) + 1);
     messageStack.push(m.substring(tailIndex));
-    messageStack.push(<TwitchEmote key={`${emoteId}${i}`} emoteId={emoteId} />);
+    messageStack.push(<TwitchEmote key={`${message.id}${emoteId}${i}`} emoteId={emoteId} />);
     messageStack.push(m.substring(0, parseInt(start)));
   }
 

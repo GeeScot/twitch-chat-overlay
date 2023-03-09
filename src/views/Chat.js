@@ -13,6 +13,7 @@ import { useGetMessagesQuery } from '../app/twitchChat';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchBttvEmotes, fetchChannelBadges, fetchChannelId } from '../app/thunks';
 import { replaceBttvEmotes, replaceSubscriberEmotes } from '../utilities/emoteParser';
+import getUsernameColor from '../utilities/contrastRatio';
 
 const Chat = () => {
   // Configuration Options
@@ -55,7 +56,7 @@ const Chat = () => {
       {messages && messages.map((message, index) => {
         return (
           <MessageContainer key={index} className={`${options?.current?.disableAnimations ? '' : 'animate__animated animate__faster'} ${message.cssClass}`}>
-            <Username color={message.color}>
+            <Username color={getUsernameColor(message.color)}>
               {options?.current?.showTimestamps && <Timestamp>{ format(parseISO(message.timestamp), 'HH:mm')  }</Timestamp>}
               {channelBadges && message.badges && Object.entries(message.badges).map(([badge, version]) => {
                 const badgeVersion = (channelBadges.badge_sets[badge] || globalBadges.badge_sets[badge])?.versions[version];
