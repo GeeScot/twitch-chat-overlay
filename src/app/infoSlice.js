@@ -8,7 +8,7 @@ const infoSlice = createSlice({
     badges: [],
     limit: 10
   },
-  reducers: {},
+  reduers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchChannelId.fulfilled, (state, { payload }) => {

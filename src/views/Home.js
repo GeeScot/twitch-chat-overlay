@@ -21,7 +21,6 @@ const Home = () => {
 
   useEffect(() => {
     const b64 = localStorage.getItem('twitch-chat-options');
-    console.log(b64);
     if (!b64) {
       return;
     }
@@ -29,7 +28,6 @@ const Home = () => {
     const decodedString = Buffer.from(b64, 'base64').toString();
     const options = JSON.parse(decodedString);
 
-    console.log(options);
     setUsername(options.username);
 
     setMessageCount(options.messages);

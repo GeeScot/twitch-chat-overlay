@@ -6,12 +6,19 @@ export const twitchChatSocket = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: '/' }),
   endpoints: (build) => ({
     getMessages: build.query({
-      queryFn: () => ({ data: [] }),
+      queryFn: ({ channelName, timeout }) => ({ data: [] }),
       async onCacheEntryAdded(
         arg,
         { updateCachedData, cacheEntryRemoved, getState }
       ) {
-        const client = new tmi.Client({ channels: ['hekimae'] });
+        console.log(arg);
+        const interval = setInterval(() => {
+          updateCachedData(draft => {
+            draft.shift();
+          });
+        }, arg.timeout * 1000);
+
+        const client = new tmi.Client({ channels: [arg.channelName] });
         try { 
           // await cacheDataLoaded
           client.connect();
@@ -53,7 +60,8 @@ export const twitchChatSocket = createApi({
           client.on('clearchat', onClearChat);
         } catch {}
         await cacheEntryRemoved
-        client.close()
+        client.close();
+        clearInterval(interval);
       },
     }),
   }),
@@ -62,3 +70,31 @@ export const twitchChatSocket = createApi({
 export default twitchChatSocket;
 
 export const { useGetMessagesQuery } = twitchChatSocket;
+
+//   const max = (options?.current?.messages ?? 30) - 1;
+//   setMessages(messages => [...messages.slice(-max).map(m => {
+//     return {
+//       ...m,
+//       cssClass: ''
+//     }
+//   }), newMessage]);
+
+//   if (options?.current && options.current.timeout !== 0) {
+//     setTimeout(() => onMessageExpired(userstate.id), (options.current.timeout ?? 30) * 1000);
+//   }
+// }
+
+// const onMessageExpired = (messageId) => {
+//   setMessages(messages => messages.map((message) => {
+//     if (message.id === messageId) {
+//       message.cssClass = 'animate__slideOutUp';
+//     } else {
+//       message.cssClass = '';
+//     }
+//     return message;
+//   }));
+
+//   setTimeout(() => {
+//     setMessages(messages => [...messages.filter(m => m.id !== messageId)]);
+//   }, 500);
+// }
