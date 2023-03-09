@@ -11,7 +11,6 @@ export const twitchChatSocket = createApi({
         arg,
         { updateCachedData, cacheEntryRemoved, getState }
       ) {
-        console.log(arg);
         const interval = setInterval(() => {
           updateCachedData(draft => {
             draft.shift();
