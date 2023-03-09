@@ -1,201 +1,216 @@
-import { useEffect, useState, useRef } from 'react';
-import tmi from 'tmi.js';
-import axios from 'axios';
+import { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import queryString from 'query-string';
 import { Buffer } from 'buffer';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 // Components
 import TwitchChannelBadge from '../components/TwitchChannelBadge';
-import TwitchEmote from '../components/TwitchEmote';
-import BTTV from '../components/emotes/BTTV';
+// import TwitchEmote from '../components/TwitchEmote';
+// import BTTV from '../components/emotes/BTTV';
 
 // Data
 import globalBadges from '../badges.json';
+import { useGetMessagesQuery } from '../app/twitchChat';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchBttvEmotes, fetchChannelBadges, fetchChannelId } from '../app/thunks';
 
 const Chat = () => {
+  const { messages } = useGetMessagesQuery(undefined, {
+    selectFromResult: ({ data }) => {
+      return { messages: data };
+    }
+  });
+  const dispatch = useDispatch();
+
+  const channelBadges = useSelector(state => state.info.badges);
+  const bttv = useSelector(state => state.emotes.bttv);
   const channelName = window.location.pathname.substring(1).toLowerCase();
 
   // Configuration Options
   const options = useRef({});
 
   // Twitch Client
-  const client = new tmi.Client({ channels: [channelName] });
-  const [channelBadges, setChannelBadges] = useState(null);
-  const [bttvEmotes, setBttvEmotes] = useState([]);
-  const [messages, setMessages] = useState([]);
-  const [displayMessages, setDisplayMessages] = useState([]);
+  // const client = new tmi.Client({ channels: [channelName] });
+  // const [channelBadges, setChannelBadges] = useState(null);
+  // const [bttvEmotes, setBttvEmotes] = useState([]);
+  // const [messages, setMessages] = useState([]);
+  // const [displayMessages, setDisplayMessages] = useState([]);
   const bottom = useRef(null);
 
   useEffect(() => {
     const query = queryString.parse(window.location.search);
     const optionsObj = JSON.parse(Buffer.from(query.options, 'base64').toString());
-
     options.current = optionsObj;
-  }, [])
 
-  const onMessageReceived = (channel, userstate, message, self) => {
-    if (self) {
-      return;
-    }
-    
-    // Replace Twitch Emotes in message
-    let allEmotes = [];
-    for (const emote in userstate.emotes) {
-      const emotes = userstate.emotes[emote];
-      const mappedEmotes = emotes.map((e) => {
-        const [start, end] = e.split('-');
-        return {
-          emoteId: emote,
-          start: parseInt(start),
-          end: parseInt(end)
-        }
+    dispatch(fetchChannelId(channelName))
+      .then(() => {
+        dispatch(fetchChannelBadges({}));
+        dispatch(fetchBttvEmotes({}));
       });
+  }, [channelName, dispatch])
 
-      allEmotes.push(...mappedEmotes);
-    }
-
-    allEmotes.sort((a, b) => b.start - a.start);
-
-    const messageStack = [message];
-    for (let i = 0; i < allEmotes.length; i++) {
-      const { emoteId, start, end } = allEmotes[i];
-      const m = messageStack.pop();
-      const tailIndex = Math.min(m.length, parseInt(end)+1);
-      messageStack.push(m.substring(tailIndex));
-      messageStack.push(<TwitchEmote key={`${emoteId}${i}`} emoteId={emoteId} />);
-      messageStack.push(m.substring(0, parseInt(start)));
-    }
-
-    // Push Message on to the stack
-    const messageElements = messageStack.reverse();
-    const newMessage = {
-      id: userstate.id,
-      username: userstate['display-name'],
-      content: messageElements,
-      color: userstate.color,
-      badges: userstate.badges,
-      timestamp: new Date(parseInt(userstate['tmi-sent-ts'])),
-      cssClass: 'animate__slideInUp'
-    };
+  // const onMessageReceived = (channel, userstate, message, self) => {
+  //   if (self) {
+  //     return;
+  //   }
     
-    const max = (options?.current?.messages ?? 30) - 1;
-    setMessages(messages => [...messages.slice(-max).map(m => {
-      return {
-        ...m,
-        cssClass: ''
-      }
-    }), newMessage]);
+  //   // Replace Twitch Emotes in message
+  //   let allEmotes = [];
+  //   for (const emote in userstate.emotes) {
+  //     const emotes = userstate.emotes[emote];
+  //     const mappedEmotes = emotes.map((e) => {
+  //       const [start, end] = e.split('-');
+  //       return {
+  //         emoteId: emote,
+  //         start: parseInt(start),
+  //         end: parseInt(end)
+  //       }
+  //     });
 
-    if (options?.current && options.current.timeout !== 0) {
-      setTimeout(() => onMessageExpired(userstate.id), (options.current.timeout ?? 30) * 1000);
-    }
-  }
+  //     allEmotes.push(...mappedEmotes);
+  //   }
 
-  const onMessageDeleted = (channel, username, deletedMessage, userstate) => {
-    setMessages(messages => [...messages.filter(m => m.id !== userstate['target-msg-id'])]);
-  }
+  //   allEmotes.sort((a, b) => b.start - a.start);
 
-  const onMessageExpired = (messageId) => {
-    setMessages(messages => messages.map((message) => {
-      if (message.id === messageId) {
-        message.cssClass = 'animate__slideOutUp';
-      } else {
-        message.cssClass = '';
-      }
-      return message;
-    }));
+  //   const messageStack = [message];
+  //   for (let i = 0; i < allEmotes.length; i++) {
+  //     const { emoteId, start, end } = allEmotes[i];
+  //     const m = messageStack.pop();
+  //     const tailIndex = Math.min(m.length, parseInt(end)+1);
+  //     messageStack.push(m.substring(tailIndex));
+  //     messageStack.push(<TwitchEmote key={`${emoteId}${i}`} emoteId={emoteId} />);
+  //     messageStack.push(m.substring(0, parseInt(start)));
+  //   }
 
-    setTimeout(() => {
-      setMessages(messages => [...messages.filter(m => m.id !== messageId)]);
-    }, 500);
-  }
+  //   // Push Message on to the stack
+  //   const messageElements = messageStack.reverse();
+  //   const newMessage = {
+  //     id: userstate.id,
+  //     username: userstate['display-name'],
+  //     content: messageElements,
+  //     color: userstate.color,
+  //     badges: userstate.badges,
+  //     timestamp: new Date(parseInt(userstate['tmi-sent-ts'])),
+  //     cssClass: 'animate__slideInUp'
+  //   };
+    
+  //   const max = (options?.current?.messages ?? 30) - 1;
+  //   setMessages(messages => [...messages.slice(-max).map(m => {
+  //     return {
+  //       ...m,
+  //       cssClass: ''
+  //     }
+  //   }), newMessage]);
 
-  const onClearChat = () => {
-    setMessages(messages => []);
-    setDisplayMessages(displayMessages => []);
-  }
+  //   if (options?.current && options.current.timeout !== 0) {
+  //     setTimeout(() => onMessageExpired(userstate.id), (options.current.timeout ?? 30) * 1000);
+  //   }
+  // }
 
-  useEffect(() => {
-    const fetchChannelInformation = async () => {
-      const { data: channelId } = await axios.get(`https://decapi.me/twitch/id/${channelName}`);
+  // const onMessageDeleted = (channel, username, deletedMessage, userstate) => {
+  //   setMessages(messages => [...messages.filter(m => m.id !== userstate['target-msg-id'])]);
+  // }
 
-      const { data: channelBadges } = await axios.get(`https://badges.twitch.tv/v1/badges/channels/${channelId}/display`);
-      setChannelBadges(channelBadges);
+  // const onMessageExpired = (messageId) => {
+  //   setMessages(messages => messages.map((message) => {
+  //     if (message.id === messageId) {
+  //       message.cssClass = 'animate__slideOutUp';
+  //     } else {
+  //       message.cssClass = '';
+  //     }
+  //     return message;
+  //   }));
 
-      const { data: globalBttvEmotes } = await axios.get('https://api.betterttv.net/3/cached/emotes/global');
-      const { data: channelBttvProfile } = await axios.get(`https://api.betterttv.net/3/cached/users/twitch/${channelId}`);
+  //   setTimeout(() => {
+  //     setMessages(messages => [...messages.filter(m => m.id !== messageId)]);
+  //   }, 500);
+  // }
 
-      const allBttvEmotes = [...globalBttvEmotes, ...channelBttvProfile.channelEmotes, ...channelBttvProfile.sharedEmotes];
-      allBttvEmotes.sort((a, b) => a.code > b.code ? 1 : -1);
-      setBttvEmotes(allBttvEmotes);
-    }
+  // const onClearChat = () => {
+  //   setMessages(messages => []);
+  //   setDisplayMessages(displayMessages => []);
+  // }
 
-    fetchChannelInformation();
+  // useEffect(() => {
+  //   const fetchChannelInformation = async () => {
+  //     const { data: channelId } = await axios.get(`https://decapi.me/twitch/id/${channelName}`);
 
-    client.connect();
+  //     const { data: channelBadges } = await axios.get(`https://badges.twitch.tv/v1/badges/channels/${channelId}/display`);
+  //     setChannelBadges(channelBadges);
 
-    client.on('message', onMessageReceived);
-    client.on('messagedeleted', onMessageDeleted);
-    client.on('clearchat', onClearChat);
+  //     const { data: globalBttvEmotes } = await axios.get('https://api.betterttv.net/3/cached/emotes/global');
+  //     const { data: channelBttvProfile } = await axios.get(`https://api.betterttv.net/3/cached/users/twitch/${channelId}`);
+
+  //     const allBttvEmotes = [...globalBttvEmotes, ...channelBttvProfile.channelEmotes, ...channelBttvProfile.sharedEmotes];
+  //     allBttvEmotes.sort((a, b) => a.code > b.code ? 1 : -1);
+  //     setBttvEmotes(allBttvEmotes);
+  //   }
+
+  //   fetchChannelInformation();
+
+  //   client.connect();
+
+  //   client.on('message', onMessageReceived);
+  //   client.on('messagedeleted', onMessageDeleted);
+  //   client.on('clearchat', onClearChat);
   
-    return () => {
-      client.disconnect();
-    }
-    // eslint-disable-next-line
-  }, [])
+  //   return () => {
+  //     client.disconnect();
+  //   }
+  //   // eslint-disable-next-line
+  // }, [])
   
-  useEffect(() => {
-    const processed = messages.map(((message) => {
-      const existingMessageStack = [...message.content].reverse();
+  // useEffect(() => {
+  //   const processed = messages.map(((message) => {
+  //     const existingMessageStack = [...message.content].reverse();
 
-      const messageStack = [];
-      for (const m of existingMessageStack) {
-        if (typeof m !== 'string') {
-          messageStack.push(m);
-          continue;
-        }
+  //     const messageStack = [];
+  //     for (const m of existingMessageStack) {
+  //       if (typeof m !== 'string') {
+  //         messageStack.push(m);
+  //         continue;
+  //       }
 
-        const fragment = [];
-        const tokens = m.split(' ').reverse() ?? [m];
-        for (const token of tokens) {
-          const bttvEmote = bttvEmotes.find(x => x.code === token);
-          if (bttvEmote) {
-            const randomId = Math.floor(Math.random() * 1000);
-            fragment.push(<BTTV key={randomId} emoteId={bttvEmote.id} />);
-          } else {
-            fragment.push(token);
-            fragment.push(' ');
-          }
-        }
+  //       const fragment = [];
+  //       const tokens = m.split(' ').reverse() ?? [m];
+  //       for (const token of tokens) {
+  //         const bttvEmote = bttvEmotes.find(x => x.code === token);
+  //         if (bttvEmote) {
+  //           const randomId = Math.floor(Math.random() * 1000);
+  //           fragment.push(<BTTV key={randomId} emoteId={bttvEmote.id} />);
+  //         } else {
+  //           fragment.push(token);
+  //           fragment.push(' ');
+  //         }
+  //       }
 
-        messageStack.push(...fragment);
-      }
+  //       messageStack.push(...fragment);
+  //     }
 
-      const forwardMessageStack = messageStack.reverse();
-      return {
-        ...message,
-        content: forwardMessageStack
-      };
-    }));
+  //     const forwardMessageStack = messageStack.reverse();
+  //     return {
+  //       ...message,
+  //       content: forwardMessageStack
+  //     };
+  //   }));
 
-    setDisplayMessages(processed);
+  //   setDisplayMessages(processed);
 
-    if (options?.current?.autoScroll === true) {
-      // https://stackoverflow.com/questions/37620694/how-to-scroll-to-bottom-in-react
-      setTimeout(() => bottom.current.scrollIntoView({ behaviour: 'smooth' }), 100);
-    }
-    // eslint-disable-next-line
-  }, [messages])
+  //   if (options?.current?.autoScroll === true) {
+  //     // https://stackoverflow.com/questions/37620694/how-to-scroll-to-bottom-in-react
+  //     setTimeout(() => bottom.current.scrollIntoView({ behaviour: 'smooth' }), 100);
+  //   }
+  //   // eslint-disable-next-line
+  // }, [messages])
 
   return (
     <ChatContainer>
-      {displayMessages && displayMessages.map((message, index) => {
+      {messages && messages.map((message, index) => {
         return (
           <MessageContainer key={index} className={`${options?.current?.disableAnimations ? '' : 'animate__animated animate__faster'} ${message.cssClass}`}>
             <Username color={message.color}>
-              {options?.current?.showTimestamps && <Timestamp>{ format(message.timestamp, 'HH:mm')  }</Timestamp>}
+              {options?.current?.showTimestamps && <Timestamp>{ format(parseISO(message.timestamp), 'HH:mm')  }</Timestamp>}
               {channelBadges && message.badges && Object.entries(message.badges).map(([badge, version]) => {
                 const badgeVersion = (channelBadges.badge_sets[badge] || globalBadges.badge_sets[badge])?.versions[version];
                 if (!badgeVersion) {
@@ -208,7 +223,7 @@ const Chat = () => {
               })}
               <UsernameText>{message.username}</UsernameText>
             </Username>
-            <MessageBody>
+            <MessageBody key={message.id}>
               { message.content }
             </MessageBody>
           </MessageContainer>
