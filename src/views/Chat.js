@@ -20,7 +20,7 @@ const Chat = () => {
   const options = useRef({});
   const bottom = useRef(null);
   const channelName = window.location.pathname.substring(1).toLowerCase();
-  const channelBadges = useSelector(state => state.info.badges);
+  const channelBadges = useSelector(state => state.app.badges);
   const bttv = useSelector(state => state.emotes.bttv);
   const { messages } = useGetMessagesQuery({ channelName, timeout: options.current.timeout }, {
     selectFromResult: (result) => {

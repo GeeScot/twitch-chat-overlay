@@ -1,11 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit';
-import infoSlice from './infoSlice';
+import appSlice from './appSlice';
 import emotesSlice from './emotesSlice';
 import twitchChatSocket from './twitchChat';
 
 const store = configureStore({
   reducer: {
-    [infoSlice.name]: infoSlice.reducer,
+    [appSlice.name]: appSlice.reducer,
     [emotesSlice.name]: emotesSlice.reducer,
     [twitchChatSocket.reducerPath]: twitchChatSocket.reducer
   },

@@ -1,8 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { fetchChannelId, fetchChannelBadges } from './thunks';
 
-const infoSlice = createSlice({
-  name: 'info',
+const appSlice = createSlice({
+  name: 'app',
   initialState: {
     channelId: '',
     badges: [],
@@ -20,4 +20,4 @@ const infoSlice = createSlice({
   }
 });
 
-export default infoSlice;
+export default appSlice;

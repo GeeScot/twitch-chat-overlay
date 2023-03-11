@@ -34,7 +34,7 @@ export const twitchChatSocket = createApi({
             };
             updateCachedData((draft) => {
               const state = getState();
-              if (draft.length === state.info.limit) {
+              if (draft.length === state.app.limit) {
                 draft.shift();
               }
 
