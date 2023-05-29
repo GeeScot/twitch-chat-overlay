@@ -120,7 +120,7 @@ const MessageContainer = styled.div`
 
   color: white;
 
-  padding: 8px 12px;
+  padding: 4px 12px;
 `;
 
 const Timestamp = styled.div`
