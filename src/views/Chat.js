@@ -13,16 +13,14 @@ import { useGetMessagesQuery } from '../app/twitchChat';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchBttvEmotes, fetchChannelBadges, fetchChannelId } from '../app/thunks';
 import { replaceBttvEmotes, replaceSubscriberEmotes } from '../utilities/emoteParser';
-import getUsernameColor from '../utilities/contrastRatio';
 
 const Chat = () => {
   // Configuration Options
   const options = useRef({});
   const bottom = useRef(null);
-  const channelName = window.location.pathname.substring(1).toLowerCase();
   const channelBadges = useSelector(state => state.app.badges);
   const bttv = useSelector(state => state.emotes.bttv);
-  const { messages } = useGetMessagesQuery({ channelName, timeout: options.current.timeout }, {
+  const { messages } = useGetMessagesQuery({ username: options.current.username, timeout: options.current.timeout }, {
     selectFromResult: (result) => {
       const messageStacks = replaceSubscriberEmotes(result.data);
       const messages = replaceBttvEmotes(messageStacks, bttv);
@@ -33,22 +31,22 @@ const Chat = () => {
 
   useEffect(() => {
     const query = queryString.parse(window.location.search);
-    const optionsObj = JSON.parse(Buffer.from(query.options, 'base64').toString());
-    options.current = optionsObj;
+    const optionsString = Buffer.from(query.options, 'base64').toString();
+    const opts = JSON.parse(optionsString);
+    options.current = opts;
 
-    dispatch(fetchChannelId(channelName))
+    // dispatch(setOptions(opts));
+
+    dispatch(fetchChannelId(opts.username))
       .then(() => {
         dispatch(fetchChannelBadges({}));
         dispatch(fetchBttvEmotes({}));
       });
-  }, [channelName, dispatch])
+  }, [dispatch])
 
   useEffect(() => {
-    if (options?.current?.autoScroll === true) {
-      // https://stackoverflow.com/questions/37620694/how-to-scroll-to-bottom-in-react
-      setTimeout(() => bottom.current.scrollIntoView({ behaviour: 'smooth' }), 100);
-    }
-    // eslint-disable-next-line
+    // https://stackoverflow.com/questions/37620694/how-to-scroll-to-bottom-in-react
+    setTimeout(() => bottom.current.scrollIntoView({ behaviour: 'smooth' }), 100);
   }, [messages])
 
   return (
@@ -56,8 +54,8 @@ const Chat = () => {
       {messages && messages.map((message, index) => {
         return (
           <MessageContainer key={index} className={`${options?.current?.disableAnimations ? '' : 'animate__animated animate__faster'} ${message.cssClass}`}>
-            <Username color={getUsernameColor(message.color)}>
-              {options?.current?.showTimestamps && <Timestamp>{ format(parseISO(message.timestamp), 'HH:mm')  }</Timestamp>}
+            <Username color={message.color}>
+              {options?.current && options.current.timestamps && <Timestamp>{ format(parseISO(message.timestamp), 'HH:mm')  }</Timestamp>}
               {channelBadges && message.badges && Object.entries(message.badges).map(([badge, version]) => {
                 const badgeVersion = (channelBadges.badge_sets[badge] || globalBadges.badge_sets[badge])?.versions[version];
                 if (!badgeVersion) {
@@ -69,10 +67,10 @@ const Chat = () => {
                 )
               })}
               <UsernameText>{message.username}</UsernameText>
+              <MessageBody key={message.id}>
+                { message.content }
+              </MessageBody>
             </Username>
-            <MessageBody key={message.id}>
-              { message.content }
-            </MessageBody>
           </MessageContainer>
         )
       })}
@@ -99,8 +97,6 @@ const BottomAnchor = styled.div`
 `;
 
 const ChatContainer = styled.div`
-  display: flex;
-  flex-direction: column;
   gap: 4px;
 
   padding: 10px 0;
@@ -114,17 +110,17 @@ const ChatContainer = styled.div`
 `;
 
 const MessageContainer = styled.div`
-  width: 90%;
+  /* width: 90%; */
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
 
   word-wrap: break-word;
 
   color: white;
-  background-color: rgba(0, 0, 0, 0.97);
 
   padding: 8px 12px;
-
-  border-radius: 6px;
-  box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px, rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
 `;
 
 const Timestamp = styled.div`
@@ -156,4 +152,7 @@ const UsernameText = styled.div`
 
 const MessageBody = styled.div`
   font-size: 16px;
+  color: #ffffff;
+
+  margin-left: 4px;
 `;

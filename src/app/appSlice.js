@@ -6,9 +6,19 @@ const appSlice = createSlice({
   initialState: {
     channelId: '',
     badges: [],
-    limit: 10
+    options: {
+      username: '',
+      limit: 10,
+      timeout: 30,
+      timestamps: false,
+      animations: false
+    }
   },
-  reduers: {},
+  reduers: {
+    setOptions: (state, { payload }) => {
+      state.options = payload;
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchChannelId.fulfilled, (state, { payload }) => {
@@ -19,5 +29,7 @@ const appSlice = createSlice({
       })
   }
 });
+
+export const { setOptions } = appSlice.actions;
 
 export default appSlice;

@@ -5,7 +5,7 @@ const TwitchEmote = ({ emoteId }) => {
       src={`https://static-cdn.jtvnw.net/emoticons/v2/${emoteId}/default/dark/2.0`}
       width="25"
       height="25"
-      style={{ objectFit: 'scale-down' }} />
+      style={{ objectFit: 'scale-down', verticalAlign: 'middle' }} />
   )
 }
 

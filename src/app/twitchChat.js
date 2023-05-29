@@ -6,18 +6,22 @@ export const twitchChatSocket = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: '/' }),
   endpoints: (build) => ({
     getMessages: build.query({
-      queryFn: ({ channelName, timeout }) => ({ data: [] }),
+      queryFn: ({ username, timeout }) => ({ data: [] }),
       async onCacheEntryAdded(
-        arg,
+        { username, timeout },
         { updateCachedData, cacheEntryRemoved, getState }
       ) {
-        const interval = setInterval(() => {
+        if (!username) {
+          return;
+        }
+
+        setInterval(() => {
           updateCachedData(draft => {
             draft.shift();
           });
-        }, arg.timeout * 1000);
+        }, timeout * 1000);
 
-        const client = new tmi.Client({ channels: [arg.channelName] });
+        const client = new tmi.Client({ channels: [username] });
         try { 
           // await cacheDataLoaded
           client.connect();
@@ -34,7 +38,7 @@ export const twitchChatSocket = createApi({
             };
             updateCachedData((draft) => {
               const state = getState();
-              if (draft.length === state.app.limit) {
+              if (draft.length === state.app.options.limit) {
                 draft.shift();
               }
 
@@ -59,8 +63,6 @@ export const twitchChatSocket = createApi({
           client.on('clearchat', onClearChat);
         } catch {}
         await cacheEntryRemoved;
-        client.close();
-        clearInterval(interval);
       },
     }),
   }),
