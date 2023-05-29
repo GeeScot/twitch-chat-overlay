@@ -54,23 +54,23 @@ const Chat = () => {
       {messages && messages.map((message, index) => {
         return (
           <MessageContainer key={index} className={`${options?.current?.disableAnimations ? '' : 'animate__animated animate__faster'} ${message.cssClass}`}>
-            <Username color={message.color}>
-              {options?.current && options.current.timestamps && <Timestamp>{ format(parseISO(message.timestamp), 'HH:mm')  }</Timestamp>}
-              {channelBadges && message.badges && Object.entries(message.badges).map(([badge, version]) => {
-                const badgeVersion = (channelBadges.badge_sets[badge] || globalBadges.badge_sets[badge])?.versions[version];
-                if (!badgeVersion) {
-                  return <span key={badge}></span>;
-                }
-
-                return (
-                  <TwitchChannelBadge key={badge} alt={badge} badgeVersion={badgeVersion} />
-                )
-              })}
-              <UsernameText>{message.username}</UsernameText>
               <MessageBody key={message.id}>
+                <Username color={message.color}>
+                {options?.current && options.current.timestamps && <Timestamp>{ format(parseISO(message.timestamp), 'HH:mm')  }</Timestamp>}
+                {channelBadges && message.badges && Object.entries(message.badges).map(([badge, version]) => {
+                  const badgeVersion = (channelBadges.badge_sets[badge] || globalBadges.badge_sets[badge])?.versions[version];
+                  if (!badgeVersion) {
+                    return <span key={badge}></span>;
+                  }
+
+                  return (
+                    <TwitchChannelBadge key={badge} alt={badge} badgeVersion={badgeVersion} />
+                  )
+                })}
+                </Username>
+                <UsernameText color={message.color}>{message.username}</UsernameText>
                 { message.content }
               </MessageBody>
-            </Username>
           </MessageContainer>
         )
       })}
@@ -110,7 +110,6 @@ const ChatContainer = styled.div`
 `;
 
 const MessageContainer = styled.div`
-  /* width: 90%; */
   display: flex;
   flex-direction: column;
 
@@ -131,28 +130,25 @@ const Timestamp = styled.div`
   color: #ffffff;
 `;
 
-const Username = styled.div`
-  display: flex;
-  flex-direction: row;
-  gap: 2px;
-
+const Username = styled.span`
   color: ${p => p.color};
-
-  margin-bottom: 4px;
-
-  align-items: center;
+  
+  vertical-align: middle;
+  margin-right: 4px;
 `;
 
-const UsernameText = styled.div`
+const UsernameText = styled.span`
+  display: inline;
+
   font-size: 15px;
   font-weight: bold;
+  
+  vertical-align: middle;
 
-  padding-left: 1px;
+  color: ${p => p.color};
 `;
 
-const MessageBody = styled.div`
+const MessageBody = styled.span`
   font-size: 16px;
   color: #ffffff;
-
-  margin-left: 4px;
 `;

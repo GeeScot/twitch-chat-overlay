@@ -11,9 +11,12 @@ const TwitchChannelBadge = ({ alt, badgeVersion }) => {
 export default TwitchChannelBadge;
 
 const ChannelBadge = styled.img`
+  display: inline;
   width: 18px;
   height: 18px;
   padding: 0 1px;
 
   object-fit: scale-down;
+
+  vertical-align: middle;
 `;
